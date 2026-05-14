@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chat with Yassin - by BilalToday.com</title>
+    <style>
+        /* --- Basis & Variablen --- */
+        :root {
+            --bg-gradient: linear-gradient(-45deg, #c2e9fb, #a1c4fd, #fdfbfb, #e2d1c3);
+            --glass-bg: rgba(255, 255, 255, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            --text-primary: #1a1a1a;
+            --text-secondary: #555;
+            --text-muted: #888;
+            --msg-bot-bg: rgba(255, 255, 255, 0.7);
+            --msg-user-bg: rgba(10, 132, 255, 0.85); /* Apple Blue */
+            --msg-user-text: #fff;
+            --input-bg: rgba(255, 255, 255, 0.5);
+            --suggestion-hover: rgba(255, 255, 255, 0.8);
+        }
+
+        .dark-theme {
+            --bg-gradient: linear-gradient(-45deg, #0f2027, #203a43, #2c5364, #141e30);
+            --glass-bg: rgba(20, 20, 20, 0.45);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            --text-primary: #f5f5f7;
+            --text-secondary: #aaa;
+            --text-muted: #666;
+            --msg-bot-bg: rgba(45, 45, 45, 0.75);
+            --msg-user-bg: rgba(10, 132, 255, 0.9);
+            --msg-user-text: #fff;
+            --input-bg: rgba(40, 40, 40, 0.5);
+            --suggestion-hover: rgba(60, 60, 60, 0.9);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--bg-gradient);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: var(--text-primary);
+            overflow: hidden;
+            transition: background 0.5s ease;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* --- Ladebildschirm (Splash Screen) --- */
+        #splashScreen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-gradient);
+            background-size: 400% 400%;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease, visibility 0.8s;
+        }
+
+        .splash-logo {
+            width: 100px;
+            height: 100px;
+            background: var(--glass-bg);
+            border-radius: 25px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: var(--glass-shadow);
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        .splash-text {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--text-primary);
+            text-shadow: 0 2px 10px rgba(255,255,255,0.5);
+        }
+
+        .splash-brand {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .loader-bar {
+            width: 150px;
+            height: 4px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 4px;
+            margin-top: 30px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .loader-fill {
+            position: absolute;
+            top: 0; left: 0; height: 100%;
+            background: #0a84ff;
+            width: 0%;
+            animation: loadProgress 2s ease forwards;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(10, 132, 255, 0.4); }
+            70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(10, 132, 255, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(10, 132, 255, 0); }
+        }
+
+        @keyframes loadProgress {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+
+        /* --- Main App Container --- */
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100%;
+            max-height: 850px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            box-shadow: var(--glass-shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .app-container.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        @media (max-width: 500px) {
+            .app-container {
+                max-width: 100%;
+                max-height: 100%;
+                border-radius: 0;
+                border: none;
+            }
+        }
+
+        /* --- Header --- */
+        .chat-header {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        .profile-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar-container { position: relative; }
+
+        .avatar {
+            width: 45px; height: 45px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            overflow: hidden; /* Für das Bild */
+        }
+
+        .status-dot {
+            position: absolute; bottom: 0; right: 0;
+            width: 12px; height: 12px;
+            background: #34C759;
+            border-radius: 50%;
+            border: 2px solid var(--glass-bg);
+        }
+
+        .user-details h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 2px; }
+        .user-details p { font-size: 0.8rem; color: var(--text-secondary); }
+
+        .header-actions { display: flex; gap: 10px; }
+        .icon-btn {
+            background: none; border: none; cursor: pointer;
+            font-size: 1.2rem; color: var(--text-primary);
+            padding: 8px; border-radius: 50%;
+            transition: transform 0.3s ease, background 0.3s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .icon-btn:hover { transform: scale(1.1); background: rgba(255, 255, 255, 0.1); }
+
+        /* --- Chat Area --- */
+        .chat-area {
+            flex: 1; padding: 20px; overflow-y: auto;
+            display: flex; flex-direction: column; gap: 12px;
+            scroll-behavior: smooth; position: relative;
+        }
+        .chat-area::-webkit-scrollbar { width: 0px; }
+
+        .message-wrapper {
+            display: flex; flex-direction: column;
+            max-width: 82%; opacity: 0; transform: translateY(15px);
+            animation: msgSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .message-wrapper.bot { align-self: flex-start; }
+        .message-wrapper.user { align-self: flex-end; }
+
+        .message {
+            padding: 12px 16px; border-radius: 20px;
+            font-size: 0.95rem; line-height: 1.4;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            word-wrap: break-word; position: relative;
+        }
+
+        .bot .message {
+            background: var(--msg-bot-bg);
+            border-bottom-left-radius: 4px;
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .user .message {
+            background: var(--msg-user-bg);
+            color: var(--msg-user-text);
+            border-bottom-right-radius: 4px;
+        }
+
+        /* Zeitstempel & Status */
+        .msg-info {
+            font-size: 0.65rem; color: var(--text-muted);
+            margin-top: 4px; display: flex; align-items: center; gap: 4px;
+        }
+        .bot .msg-info { align-self: flex-start; margin-left: 4px; }
+        .user .msg-info { align-self: flex-end; margin-right: 4px; }
+        
+        .read-receipt svg { width: 14px; height: 14px; fill: #34C759; }
+
+        @keyframes msgSlideUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Typing Indicator --- */
+        .typing-indicator {
+            display: none; padding: 12px 16px;
+            background: var(--msg-bot-bg); border-radius: 20px;
+            border-bottom-left-radius: 4px; align-self: flex-start;
+            border: 1px solid var(--glass-border); width: fit-content;
+            margin-bottom: 10px;
+        }
+        .typing-indicator span {
+            display: inline-block; width: 6px; height: 6px;
+            background: var(--text-secondary); border-radius: 50%;
+            margin: 0 2px; animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* --- Autocomplete / Suggestions --- */
+        .suggestions-container {
+            position: absolute; bottom: 70px; left: 10px; right: 10px;
+            background: var(--glass-bg); backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border); border-radius: 15px;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+            max-height: 200px; overflow-y: auto; z-index: 20;
+            display: none; flex-direction: column;
+            transform: translateY(10px); opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .suggestions-container.show {
+            display: flex; transform: translateY(0); opacity: 1;
+            animation: fadeIn 0.3s forwards;
+        }
+
+        .suggestions-container::-webkit-scrollbar { width: 5px; }
+        .suggestions-container::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 5px; }
+
+        .suggestion-item {
+            padding: 12px 15px; border-bottom: 1px solid var(--glass-border);
+            font-size: 0.9rem; cursor: pointer; color: var(--text-primary);
+            transition: background 0.2s; display: flex; align-items: center; gap: 10px;
+        }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:hover { background: var(--suggestion-hover); }
+        .suggestion-item svg { width: 16px; height: 16px; fill: var(--text-secondary); }
+
+        /* --- Input Area --- */
+        .input-area {
+            padding: 15px 20px; background: rgba(255, 255, 255, 0.05);
+            border-top: 1px solid var(--glass-border);
+            backdrop-filter: blur(15px); position: relative; z-index: 25;
+        }
+
+        .input-wrapper {
+            display: flex; align-items: center;
+            background: var(--input-bg); border-radius: 24px;
+            padding: 6px 6px 6px 16px; border: 1px solid var(--glass-border);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+            transition: box-shadow 0.3s ease;
+        }
+        .input-wrapper:focus-within { box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.5); }
+        
+        .input-wrapper input {
+            flex: 1; background: none; border: none; outline: none;
+            color: var(--text-primary); font-size: 0.95rem;
+        }
+        .input-wrapper input::placeholder { color: var(--text-secondary); }
+
+        .send-btn {
+            background: var(--msg-user-bg); color: white;
+            border: none; width: 36px; height: 36px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: transform 0.2s, background 0.2s;
+        }
+        .send-btn:hover { transform: scale(1.05); }
+        .send-btn:active { transform: scale(0.95); }
+        .send-btn svg { width: 18px; height: 18px; margin-left: 2px; }
+        .send-btn:disabled { background: var(--text-muted); cursor: not-allowed; transform: none; }
+
+        /* --- Footer Branding --- */
+        .branding {
+            text-align: center; padding: 10px; font-size: 0.75rem;
+            color: var(--text-secondary); background: rgba(255, 255, 255, 0.02);
+        }
+        .branding a { color: var(--text-primary); text-decoration: none; font-weight: 600; }
+        
+    </style>
+</head>
+<body>
+
+    <!-- Splash Screen -->
+    <div id="splashScreen">
+        <div class="splash-logo">
+            <svg viewBox="0 0 100 100" width="60" height="60" xmlns="http://www.w3.org/2000/svg">
+                <!-- Gesicht -->
+                <circle cx="50" cy="50" r="45" fill="#FFCBA4"/>
+                <!-- Haare (Kurz, glatt) -->
+                <path d="M 15 45 Q 50 10 85 45 Q 90 20 50 10 Q 10 20 15 45 Z" fill="#3B2F2F"/>
+                <!-- Brille -->
+                <rect x="23" y="38" width="24" height="14" rx="4" fill="none" stroke="#222" stroke-width="3"/>
+                <rect x="53" y="38" width="24" height="14" rx="4" fill="none" stroke="#222" stroke-width="3"/>
+                <path d="M 47 43 L 53 43" stroke="#222" stroke-width="3"/>
+                <!-- Augen -->
+                <circle cx="35" cy="45" r="4" fill="#000"/>
+                <circle cx="65" cy="45" r="4" fill="#000"/>
+                <!-- Lächeln -->
+                <path d="M 38 65 Q 50 75 62 65" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <div class="splash-text">Yassin</div>
+        <div class="splash-brand">by BilalToday.com</div>
+        <div class="loader-bar"><div class="loader-fill"></div></div>
+    </div>
+
+    <!-- Main App -->
+    <div class="app-container" id="appContainer">
+        
+        <header class="chat-header">
+            <div class="profile-info">
+                <div class="avatar-container">
+                    <div class="avatar">
+                        <svg viewBox="0 0 100 100" width="35" height="35" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Gesicht -->
+                            <circle cx="50" cy="50" r="45" fill="#FFCBA4"/>
+                            <!-- Haare (Kurz, glatt) -->
+                            <path d="M 15 45 Q 50 10 85 45 Q 90 20 50 10 Q 10 20 15 45 Z" fill="#3B2F2F"/>
+                            <!-- Brille -->
+                            <rect x="23" y="38" width="24" height="14" rx="4" fill="none" stroke="#222" stroke-width="3"/>
+                            <rect x="53" y="38" width="24" height="14" rx="4" fill="none" stroke="#222" stroke-width="3"/>
+                            <path d="M 47 43 L 53 43" stroke="#222" stroke-width="3"/>
+                            <!-- Augen -->
+                            <circle cx="35" cy="45" r="4" fill="#000"/>
+                            <circle cx="65" cy="45" r="4" fill="#000"/>
+                            <!-- Lächeln -->
+                            <path d="M 38 65 Q 50 75 62 65" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="status-dot"></div>
+                </div>
+                <div class="user-details">
+                    <h2>Yassin</h2>
+                    <p id="headerStatus">Online</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" id="clearChatBtn" title="Chat leeren">🗑️</button>
+                <button class="icon-btn" id="themeToggle" title="Dark/Light Mode">🌙</button>
+            </div>
+        </header>
+
+        <div class="chat-area" id="chatArea">
+            <!-- Will be populated dynamically -->
+            <div class="typing-indicator" id="typingIndicator">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+
+        <!-- Autocomplete Suggestions -->
+        <div class="suggestions-container" id="suggestionsContainer">
+            <!-- Items inject via JS -->
+        </div>
+
+        <div class="input-area">
+            <div class="input-wrapper">
+                <input type="text" id="messageInput" placeholder="Frag mich etwas..." autocomplete="off">
+                <button class="send-btn" id="sendBtn" disabled title="Senden">
+                    <svg fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="branding">
+            Chat with Yassin by <a href="https://BilalToday.com" target="_blank">BilalToday.com</a>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elemente ---
+        const splashScreen = document.getElementById('splashScreen');
+        const appContainer = document.getElementById('appContainer');
+        const chatArea = document.getElementById('chatArea');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const headerStatus = document.getElementById('headerStatus');
+        const themeToggle = document.getElementById('themeToggle');
+        const clearChatBtn = document.getElementById('clearChatBtn');
+        const suggestionsContainer = document.getElementById('suggestionsContainer');
+
+        // --- Splash Screen Logik ---
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                splashScreen.style.opacity = '0';
+                setTimeout(() => {
+                    splashScreen.style.visibility = 'hidden';
+                    splashScreen.style.display = 'none';
+                    appContainer.classList.add('visible');
+                    initChat(); // Chat starten
+                }, 800);
+            }, 2000); // 2 Sekunden Ladezeit
+        });
+
+        // --- Dark/Light Mode ---
+        let isDarkMode = false;
+        themeToggle.addEventListener('click', () => {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-theme', isDarkMode);
+            themeToggle.textContent = isDarkMode ? '☀️' : '🌙';
+        });
+
+        // --- Uhrzeit Generator ---
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // --- Massive Datenbank (Yassins wahre Persönlichkeit) ---
+        const qaDatabase = [
+            // Basics & Person
+            { q: "Wer bist du?", k: ["wer bist", "name", "heißt"], a: "Ich bin Yassin! Ein ganz normaler 15-jähriger Junge aus Düsseldorf. 😎" },
+            { q: "Bist du ein Junge oder ein Mädchen?", k: ["junge", "mädchen", "geschlecht"], a: "Ich bin ein Junge. 👦" },
+            { q: "Wie alt bist du?", k: ["alter", "alt", "wie viele jahre"], a: "Ich bin 15 Jahre alt." },
+            { q: "Wann hast du Geburtstag?", k: ["geburtstag", "geboren", "monat"], a: "Ich habe im Juli Geburtstag! ☀️ Perfekt für den Sommer." },
+            { q: "Wie siehst du aus?", k: ["aussehen", "siehst", "haare", "bart"], a: "Ich habe glatte, kurze Haare, trage eine Brille 👓 und habe (noch) keinen Bart. 😂" },
+            
+            // Wohnort & Leben
+            { q: "Wo wohnst du?", k: ["wohnen", "wohnst", "woher", "stadt", "ort", "kommst"], a: "Ich wohne in Düsseldorf und liebe es hier zu leben! 🎉" },
+            { q: "Magst du Düsseldorf?", k: ["düsseldorf", "stadt"], a: "Ja man, ich liebe Düsseldorf! Es ist mega cool hier, ich liebe auch subway!." },
+            { q: "Gehst du gerne raus?", k: ["rausgehen", "raus", "sonne", "draußen"], a: "Auf jeden Fall! Ich bin voll gerne draußen, vor allem wenn die Sonne scheint mit meinen long subway!😂. ☀️" },
+            
+            // Familie
+            { q: "Hast du Geschwister?", k: ["geschwister", "bruder", "schwester", "familie"], a: "Ja, ich habe zwei große Schwestern und einen kleinen Bruder. Ziemlich cool bei uns zuhause! 😅" },
+            { q: "Hast du einen Bruder?", k: ["bruder"], a: "Ja, ich habe einen kleinen Bruder." },
+            { q: "Hast du Schwestern?", k: ["schwester", "schwestern"], a: "Ja, zwei große Schwestern.Die kaufen mir aber nur manchmal was. Leider kein Spotify" },
+            
+            // Schule
+            { q: "Auf welche Schule gehst du?", k: ["schule", "gehst du", "klasse"], a: "Ich gehe auf eine Realschule in Düsseldorf." },
+            { q: "Wie sind deine Noten?", k: ["noten", "gut in der schule", "zeugnis"], a: "Eigentlich schreibe ich ziemlich gute Noten. Bin ganz zufrieden! 🤓" },
+            { q: "Habt ihr iPads in der Schule?", k: ["ipad", "schulipad", "tablet"], a: "Ne, leider nicht. Wir haben keine Schul-iPads. 😕" },
+            
+            // Hobbys, Kleidung & Freizeit
+            { q: "Was sind deine Hobbys?", k: ["hobby", "hobbys", "freizeit", "machst du gerne"], a: "Ich fahre mega gerne Fahrrad 🚲 und chille auf TikTok. Und shoppen gehe ich auch gerne!" },
+            { q: "Welche Streaming Plattform nutzt du?", k: ["streaming", "netflix", "youtube", "guckst", "plattform"], a: "Ich nutze eigentlich am meisten TikTok! 📱 Das ist meine Main-Plattform." },
+            { q: "Was machst du in deiner Freizeit?", k: ["freizeit", "langeweile"], a: "Fahrrad fahren, TikTok schauen, draußen in der Sonne chillen oder shoppen gehen. 🛍️" },
+            { q: "Magst du Shoppen?", k: ["shoppen", "einkaufen"], a: "Ja, ich liebe Einkaufen! Vor allem moderne Sachen." },
+            { q: "Wo kaufst du deine Klamotten?", k: ["klamotten", "kleidung", "zara", "marken"], a: "Ich gehe richtig gerne zu Zara! Ich feier moderne Sachen." },
+            { q: "Was trägst du gerne?", k: ["trägst", "style", "outfit"], a: "Am liebsten moderne Sachen, gerne auch mal ohne Jacke, wenn es geht. Hauptsache lässig. 😎" },
+            { q: "Was ist deine Lieblingsfarbe?", k: ["farbe", "lieblingsfarbe"], a: "Meine Lieblingsfarbe ist Blau! 🔵" },
+            
+            // Technik & Meinung
+            { q: "Magst du Technik?", k: ["technik", "computer", "handy"], a: "Ja, Technik feier ich extrem! 💻📱" },
+            { q: "Magst du Apple?", k: ["apple", "iphone", "mac"], a: "Es ist okay, aber ich hasse es, zu lange im Apple-Ökosystem gefangen zu sein. Manchmal nervt es. 🙄" },
+            
+            // System & Fun
+            { q: "Wie spät ist es?", k: ["uhr", "uhrzeit", "spät"], a: `Guck doch auf dein Handy! Spaß, es ist ${getCurrentTime()} Uhr. ⏰` },
+            { q: "Wer hat dich gemacht?", k: ["erschaffen", "programmiert", "gemacht", "entwickler", "bilal", "bilaltoday"], a: "Ich bin ein Projekt von BilalToday.com! 🚀" },
+            { q: "Hallo", k: ["hallo", "hi", "hey", "moin", "servus"], a: "Hey! 👋 Was geht ab?" },
+            { q: "Wie geht es dir?", k: ["wie gehts", "wie geht es", "alles fit", "alles gut"], a: "Mir geht's super, danke! Und dir?" }
+        ];
+
+        // --- UI Hilfsfunktionen ---
+        function scrollToBottom() {
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function addMessage(text, sender) {
+            const wrapper = document.createElement('div');
+            wrapper.classList.add('message-wrapper', sender);
+            
+            const messageObj = document.createElement('div');
+            messageObj.classList.add('message');
+            messageObj.innerHTML = text; 
+            
+            const infoObj = document.createElement('div');
+            infoObj.classList.add('msg-info');
+            
+            const timeSpan = document.createElement('span');
+            timeSpan.textContent = getCurrentTime();
+            infoObj.appendChild(timeSpan);
+
+            if(sender === 'user') {
+                const readIcon = document.createElement('span');
+                readIcon.classList.add('read-receipt');
+                readIcon.innerHTML = `<svg viewBox="0 0 24 24"><path d="M18 7l-1.41-1.41-6.34 6.34 1.41 1.41L18 7zm4.24-1.41L11.66 16.17 7.48 12l-1.41 1.41L11.66 19l12-12-1.42-1.41zM.41 13.41L6 19l1.41-1.41L1.83 12 .41 13.41z"/></svg>`;
+                infoObj.appendChild(readIcon);
+            }
+            
+            wrapper.appendChild(messageObj);
+            wrapper.appendChild(infoObj);
+            
+            chatArea.insertBefore(wrapper, typingIndicator);
+            scrollToBottom();
+        }
+
+        function initChat() {
+            chatArea.innerHTML = '';
+            chatArea.appendChild(typingIndicator); 
+            addMessage("Hey, ich bin Yassin! 👋 Schreib mir oder tipp einfach was ein, um zu sehen, was du mich fragen kannst.", 'bot');
+        }
+
+        clearChatBtn.addEventListener('click', () => {
+            if(confirm("Möchtest du den Chat wirklich löschen?")) {
+                initChat();
+            }
+        });
+
+        // --- Autocomplete / Such-Logik ---
+        messageInput.addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase().trim();
+            suggestionsContainer.innerHTML = ''; 
+            
+            if (val.length > 0) {
+                sendBtn.disabled = false;
+                
+                const matches = qaDatabase.filter(item => 
+                    item.q.toLowerCase().includes(val) || 
+                    item.k.some(keyword => keyword.includes(val))
+                ).slice(0, 6); // Zeige max 6 Vorschläge
+
+                if (matches.length > 0) {
+                    matches.forEach(match => {
+                        const div = document.createElement('div');
+                        div.classList.add('suggestion-item');
+                        div.innerHTML = `<svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg> ${match.q}`;
+                        
+                        div.addEventListener('click', () => {
+                            messageInput.value = match.q;
+                            suggestionsContainer.classList.remove('show');
+                            handleSend(); 
+                        });
+                        suggestionsContainer.appendChild(div);
+                    });
+                    suggestionsContainer.classList.add('show');
+                } else {
+                    suggestionsContainer.classList.remove('show');
+                }
+            } else {
+                sendBtn.disabled = true;
+                suggestionsContainer.classList.remove('show');
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!messageInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+                suggestionsContainer.classList.remove('show');
+            }
+        });
+
+        // --- Bot Gehirn Verarbeitung ---
+        function getBotResponse(input) {
+            const lowerInput = input.toLowerCase().trim();
+
+            for (let item of qaDatabase) {
+                if (item.k.some(keyword => lowerInput.includes(keyword)) || lowerInput === item.q.toLowerCase()) {
+                    if (typeof item.a === 'function') {
+                        return item.a();
+                    }
+                    return item.a;
+                }
+            }
+
+            // Wenn Yassin die Frage nicht kennt
+            const fallbacks = [
+                "Haha gute Frage, aber da muss ich echt passen. 😅 Frag mich lieber nach Hobbys oder so!",
+                "Puh, keine Ahnung ehrlich gesagt. 🤔 Frag mich doch mal, wo ich gerne einkaufe.",
+                "Echt jetzt? 😂 Da hab ich gerade keine Antwort drauf.",
+                "Bro, was ist das für eine Frage? 💀",
+                "Dazu sage ich jetzt mal nichts... Frag mich was anderes! 😂"
+            ];
+            return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+        }
+
+        // --- Senden Logik ---
+        function handleSend() {
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            suggestionsContainer.classList.remove('show');
+
+            addMessage(text, 'user');
+            messageInput.value = '';
+            messageInput.focus();
+            sendBtn.disabled = true;
+
+            headerStatus.textContent = "schreibt...";
+            headerStatus.style.color = "#0a84ff";
+            typingIndicator.style.display = 'flex';
+            scrollToBottom();
+
+            // Yassin tippt (1 bis 2.5 Sekunden, je nach Länge)
+            const delay = Math.floor(Math.random() * 1500) + 1000; 
+            
+            setTimeout(() => {
+                typingIndicator.style.display = 'none';
+                headerStatus.textContent = "Online";
+                headerStatus.style.color = "var(--text-secondary)";
+                
+                const response = getBotResponse(text);
+                addMessage(response, 'bot');
+            }, delay);
+        }
+
+        // Event Listeners
+        sendBtn.addEventListener('click', handleSend);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSend();
+        });
+
+    </script>
+</body>
+</html>
